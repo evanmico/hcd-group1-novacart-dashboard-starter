@@ -154,7 +154,7 @@ def get_summary():
     
     row = results[0]
     return {
-        "total_revenue":     round(row["total_revenue"] or 0, 2),
+        "total_revenue":     round(float(row["total_revenue"] or 0), 2),
         "total_orders":      row["total_orders"],
         "unique_customers":  row["unique_customers"],
         "date_range": {"start": row["start_date"], "end": row["end_date"]},
@@ -175,18 +175,35 @@ def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
         { "month": "2022-01", "month_name": "January", "order_count": 842, "revenue": 128450.00 },
         { "month": "2022-02", "month_name": "February", "order_count": 910, "revenue": 141230.00 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_date on date_key
-      - GROUP BY year, month, month_name
-      - Filter order_date between start and end
-      - Only include delivered + shipped for revenue
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            d.year                      AS year,
+            d.month                     AS month,
+            d.month_name                AS month_name,
+            COUNT(DISTINCT f.order_id)  AS order_count,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_date d ON f.date_key = d.date_key
+        WHERE f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY d.year, d.month, d.month_name
+        ORDER BY d.year, d.month
+    """, (start, end))
+
+    return [
+        {
+            "month":       f"{row['year']}-{int(row['month']):02d}",
+            "month_name":  row["month_name"],
+            "order_count": row["order_count"],
+            "revenue":     round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/products", tags=["Franchise"])
