@@ -132,7 +132,7 @@ The frontend was built against dummy data. `backend/`, `router/` and the databas
 - `frontend/src/utils/mockApi.js` holds dummy data with the same function names and response shapes as `api.js`.
 - `frontend/src/utils/dataSource.js` picks `mockApi` or the real `api.js`. All pages and `ServiceStatus` import from it.
 - Dummy data is the default. To call the real backend, set `REACT_APP_USE_MOCK=false` in `frontend/.env` (see `frontend/.env.example`) and restart `npm start`.
-- Dummy city, product and customer figures scale with the selected date range. They are invented, not taken from `novacart_gold.db`.
+- The dummy figures were copied from `novacart_gold.db` (orders with status `delivered` or `shipped`): 12 monthly rows, the 10 real cities, the real products and the real top 20 customers. Full-year values are exact. For a shorter date range, city, product and customer figures are scaled by that range's share of yearly revenue, which is an approximation.
 
 ### Requirements coverage
 
