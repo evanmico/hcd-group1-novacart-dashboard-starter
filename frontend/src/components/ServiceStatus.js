@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { getHealth } from '../utils/api';
+import { getHealth } from '../utils/dataSource';
+
+const COLORS = { healthy: '#3DDC97', degraded: '#FFC857', error: '#FF6B6B', checking: '#B8C4E0' };
+const LABELS = { healthy: 'Service healthy', degraded: 'Degraded', error: 'Offline', checking: 'Checking…' };
 
 export default function ServiceStatus() {
   const [status, setStatus] = useState('checking');
@@ -22,18 +25,16 @@ export default function ServiceStatus() {
     return () => clearInterval(interval);
   }, []);
 
-  const colors = { healthy: '#00897B', degraded: '#F9A825', error: '#C62828', checking: '#90A4AE' };
-  const labels = { healthy: 'Service healthy', degraded: 'Degraded', error: 'Offline', checking: 'Checking…' };
-
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }} title={detail}>
-      <span style={{
-        width: 8, height: 8, borderRadius: '50%',
-        backgroundColor: colors[status],
-        boxShadow: status === 'healthy' ? `0 0 6px ${colors[status]}` : 'none',
-        display: 'inline-block',
-      }} />
-      <span style={{ color: colors[status], fontWeight: 500 }}>{labels[status]}</span>
+    <div className="service-status" title={detail} role="status" aria-live="polite">
+      <span
+        className="status-dot"
+        style={{
+          backgroundColor: COLORS[status],
+          boxShadow: status === 'healthy' ? `0 0 6px ${COLORS[status]}` : 'none',
+        }}
+      />
+      <span>{LABELS[status]}</span>
     </div>
   );
 }
