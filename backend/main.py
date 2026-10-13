@@ -160,10 +160,6 @@ def get_summary():
         "date_range": {"start": row["start_date"], "end": row["end_date"]},
     }
 
-
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
-
-
 @app.get("/franchise/orders", tags=["Franchise"])
 def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
