@@ -275,8 +275,37 @@ def get_customers(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            c.customer_id                AS customer_id,
+            c.name                       AS name,
+            c.addr_city                  AS city,
+            c.addr_state                 AS state,
+            COUNT(DISTINCT o.order_id)   AS total_orders,
+            ROUND(SUM(o.amount), 2)      AS total_spent
+        FROM fact_orders o
+        JOIN dim_customer c ON o.customer_id = c.customer_id
+        WHERE c.is_current = 1
+          AND o.status IN ('delivered', 'shipped')
+          AND o.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY c.customer_id, c.name, c.addr_city, c.addr_state
+        ORDER BY total_spent DESC
+        LIMIT 20
+    """, (start, end))
+
+    return [
+        {
+            "customer_id":  row["customer_id"],
+            "name":         row["name"],
+            "city":         row["city"],
+            "state":        row["state"],
+            "total_orders": row["total_orders"],
+            "total_spent":  float(row["total_spent"] or 0),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/cities", tags=["Franchise"])
