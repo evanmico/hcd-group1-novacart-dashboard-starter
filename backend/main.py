@@ -216,12 +216,6 @@ def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
         { "product_id": "P001", "name": "Wireless Headphones", "category": "Electronics",
           "units_sold": 342, "revenue": 30578.58 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_product on product_id
-      - GROUP BY product_id, name, category
-      - ORDER BY revenue DESC, LIMIT 10
     """
     conn = get_connection()
 
@@ -318,14 +312,32 @@ def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
     [
         { "city": "Austin", "state": "TX", "order_count": 420, "revenue": 38430.00 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_customer (is_current = 1) on customer_id
-      - GROUP BY addr_city, addr_state
-      - ORDER BY revenue DESC
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            c.addr_city                 AS city,
+            c.addr_state                AS state,
+            COUNT(DISTINCT f.order_id)  AS order_count,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_customer c ON f.customer_id = c.customer_id
+        WHERE c.is_current = 1
+          AND f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY c.addr_city, c.addr_state
+        ORDER BY revenue DESC
+    """, (start, end))
+
+    return [
+        {
+            "city":        row["city"],
+            "state":       row["state"],
+            "order_count": row["order_count"],
+            "revenue":     round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
