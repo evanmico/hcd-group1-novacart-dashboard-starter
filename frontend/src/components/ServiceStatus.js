@@ -26,9 +26,9 @@ export default function ServiceStatus() {
   }, []);
 
   return (
-    <div className="service-status" title={detail} role="status" aria-live="polite">
+    <div className="flex items-center gap-2 text-[13px] font-medium text-white" title={detail} role="status" aria-live="polite">
       <span
-        className="status-dot"
+        className="inline-block h-2 w-2 rounded-full"
         style={{
           backgroundColor: COLORS[status],
           boxShadow: status === 'healthy' ? `0 0 6px ${COLORS[status]}` : 'none',

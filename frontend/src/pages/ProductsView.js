@@ -11,8 +11,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import Navbar from '../components/Navbar';
+import PageShell from '../components/PageShell';
+import DateRangeFilter from '../components/DateRangeFilter';
 import ErrorMessage, { LOAD_ERROR_MESSAGE } from '../components/ErrorMessage';
+import useMediaQuery from '../utils/useMediaQuery';
 import { getProducts } from '../utils/dataSource';
 import { useTheme } from '../utils/ThemeContext';
 import { getChartTheme } from '../utils/chartTheme';
@@ -38,6 +40,8 @@ function truncate(text, max = 20) {
 export default function ProductsView() {
   const { dark } = useTheme();
   const { colors, axisTick, tooltipStyle } = getChartTheme(dark);
+  // Phones: horizontal bars (names read left-to-right, as in the Figma mobile frame)
+  const isPhone = useMediaQuery('(max-width: 639px)');
 
   const [startDate, setStartDate] = useState('2022-01-01');
   const [endDate,   setEndDate]   = useState('2022-12-31');
@@ -70,22 +74,15 @@ export default function ProductsView() {
   const chartData = products.slice(0, 10).map(p => ({ ...p, short_name: truncate(p.name) }));
 
   return (
-    <div className="app-shell">
-      <Navbar />
-      <main className="page">
-
-        <div className="page-header">
-          <h1>Products</h1>
-          <p>Top 10 products by revenue</p>
-        </div>
-
-        <div className="filter-bar">
-          <label htmlFor="products-from">From</label>
-          <input id="products-from" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label htmlFor="products-to">To</label>
-          <input id="products-to" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={loadData}>Apply</button>
-        </div>
+    <PageShell title="Products" subtitle="Top 10 products by revenue">
+        <DateRangeFilter
+          idPrefix="products"
+          startDate={startDate}
+          endDate={endDate}
+          onStartChange={setStartDate}
+          onEndChange={setEndDate}
+          onApply={loadData}
+        />
 
         {error && <ErrorMessage message={error} onRetry={error === LOAD_ERROR_MESSAGE ? loadData : undefined} />}
 
@@ -96,24 +93,37 @@ export default function ProductsView() {
             {/* ── Top products bar chart ───────────────────────────────── */}
             <div className="card highlight">
               <div className="section-title">Top 10 Products by Revenue</div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 16px' }}>
+              <p className="mb-4 mt-0.5 text-xs text-muted">
                 {startDate} to {endDate} • Revenue in USD
               </p>
               {chartData.length === 0 ? (
                 <div className="loading">No products found for the selected date range.</div>
               ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                    <XAxis dataKey="short_name" tick={axisTick} stroke={colors.grid} interval={0} />
-                    <YAxis tickFormatter={formatCurrency} tick={axisTick} stroke={colors.grid} />
+                <ResponsiveContainer width="100%" height={isPhone ? 380 : 320}>
+                  <BarChart
+                    data={chartData}
+                    layout={isPhone ? 'vertical' : 'horizontal'}
+                    margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={isPhone} horizontal={!isPhone} />
+                    {isPhone ? (
+                      <>
+                        <XAxis type="number" tickFormatter={formatCurrency} tick={axisTick} stroke={colors.grid} />
+                        <YAxis type="category" dataKey="short_name" width={104} tick={axisTick} stroke={colors.grid} interval={0} />
+                      </>
+                    ) : (
+                      <>
+                        <XAxis dataKey="short_name" tick={axisTick} stroke={colors.grid} interval={0} />
+                        <YAxis tickFormatter={formatCurrency} tick={axisTick} stroke={colors.grid} />
+                      </>
+                    )}
                     <Tooltip
                       formatter={(value) => [formatFull(value), 'Revenue']}
                       labelFormatter={(label, payload) => payload?.[0]?.payload?.name || label}
                       contentStyle={tooltipStyle}
                       cursor={{ fill: colors.cursor }}
                     />
-                    <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
+                    <Bar dataKey="revenue" radius={isPhone ? [0, 4, 4, 0] : [4, 4, 0, 0]}>
                       {chartData.map((p, i) => (
                         <Cell key={p.product_id} fill={i === 0 ? colors.highlight : colors.bar} />
                       ))}
@@ -125,11 +135,33 @@ export default function ProductsView() {
 
             {/* ── Products table ───────────────────────────────────────── */}
             <div className="card">
-              <div className="section-title" style={{ marginBottom: 16 }}>Product Details</div>
+              <div className="section-title mb-4">Product Details</div>
               {products.length === 0 ? (
                 <div className="loading">No products found for the selected date range.</div>
               ) : (
-                <div className="table-wrap">
+                <>
+                {/* Phones: one card per product (name, category, units sold, revenue) */}
+                <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+                  {products.map(p => (
+                    <li key={p.product_id} className="list-card !shadow-none">
+                      <div className="font-semibold text-ink">{p.name}</div>
+                      <div className="text-sm text-muted">{p.category}</div>
+                      <dl className="mt-3 grid grid-cols-2 gap-2">
+                        <div>
+                          <dt className="list-label">Units Sold</dt>
+                          <dd className="m-0 font-semibold text-ink">{Number(p.units_sold).toLocaleString('en-US')}</dd>
+                        </div>
+                        <div>
+                          <dt className="list-label">Revenue</dt>
+                          <dd className="m-0 font-bold text-brand">{formatFull(p.revenue)}</dd>
+                        </div>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* md and up: full table */}
+                <div className="hidden overflow-x-auto md:block">
                   <table className="data-table">
                     <thead>
                       <tr>
@@ -151,11 +183,11 @@ export default function ProductsView() {
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
           </>
         )}
-      </main>
-    </div>
+    </PageShell>
   );
 }
