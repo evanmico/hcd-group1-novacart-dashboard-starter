@@ -168,7 +168,7 @@ The frontend was built against dummy data. `backend/`, `router/` and the databas
 ### Design (Figma: NovaCart MVP)
 
 - `components/Navbar.js` is a blue left sidebar: Indigo Bio Med brand block, uppercase links, a white pill on the active page, service status, theme toggle and a user block. The logo is a placeholder SVG, not the client's file.
-- `App.css` was rewritten with blue (`#1D4FFF`) and teal (`#00BFA5`) tokens plus dark-mode variants. The colors were estimated from screenshots. The sidebar becomes a top bar on small screens.
+- `App.css` holds the blue (`#1D4FFF`) and teal (`#00BFA5`) tokens plus dark-mode variants. The colors were estimated from screenshots.
 - `utils/chartTheme.js` holds the shared chart colors, axis text and tooltip style for light and dark mode.
 - Dummy product names follow the Figma samples (Smart Scale Pro, Pulse Watch Elite and so on).
 
@@ -176,6 +176,17 @@ The frontend was built against dummy data. `backend/`, `router/` and the databas
 - The From/To date pickers replace the month dropdown, because the requirements ask for a date range.
 - Revenue by city is a bar chart (required), where the Figma shows an area chart.
 - The Customers table shows City and State instead of Country.
+
+### Mobile and Tailwind CSS
+
+Tailwind CSS 3.4 (`tailwindcss`, `postcss`, `autoprefixer` as dev dependencies) styles the app. It is pinned to the 3.x line because `react-scripts` 5 does not work with Tailwind 4. `tailwind.config.js` maps theme tokens (`bg-card`, `text-brand`, `border-line` and so on) to the CSS variables in `App.css`, so dark mode keeps working through `data-theme="dark"`.
+
+- **Navigation:** below `lg` (1024px) `Navbar.js` is a blue top header with the logo, a user chip, three equal tab buttons (white pill when active), the status indicator and the theme toggle. From `lg` it is the fixed left sidebar.
+- **New helpers:** `components/PageShell.js` (page frame and title), `components/DateRangeFilter.js` (From/To/Apply, full-width on phones) and `utils/useMediaQuery.js` (for Recharts sizes, which CSS cannot control).
+- **Orders:** stat cards stack on phones and go 3-across from `sm`. Charts stack until `xl`, are shorter on phones, and use a narrower city axis.
+- **Products:** on phones the top-10 chart uses horizontal bars, and the table becomes a list of cards (name, category, units sold, revenue). The table shows from `md`.
+- **Customers:** on phones the table becomes cards, with a "Sort by" dropdown (every column) and an asc/desc button. The sortable table shows from `md`.
+- Not yet checked on a real phone or in browser dev tools. Only the build was verified.
 
 ### Typography
 

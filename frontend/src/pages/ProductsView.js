@@ -1,12 +1,7 @@
 /**
- * ProductsView.js — Product Performance page (Figma: Dashboard/Products)
- *
- * This page shows:
- *   - A vertical bar chart of top 10 products by revenue (top product in teal)
- *   - A table with product name, category, units sold, and revenue
- *   - A date range filter
- *
- * Data comes from utils/dataSource (dummy data by default, see REACT_APP_USE_MOCK).
+ * ProductsView.js — Product Performance page
+ * Shows top 10 products bar chart + details table.
+ * Fully responsive with Tailwind CSS.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -17,21 +12,16 @@ import { getProducts } from '../utils/dataSource';
 import { useTheme } from '../utils/ThemeContext';
 import { getChartTheme } from '../utils/chartTheme';
 
-// Compact currency for chart axes, e.g. $90K / $1.2M
-function formatCurrency(value) {
+function formatCompact(value) {
   if (!value) return '$0';
-  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000)    return `$${(value / 1000).toFixed(0)}K`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000)     return `$${(value / 1_000).toFixed(0)}K`;
   return `$${value.toFixed(2)}`;
 }
-
-// Full currency for tooltip and table, e.g. $89,600
 function formatFull(value) {
   return `$${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 }
-
-// Shorten long product names so they fit under the bars
-function truncate(text, max = 20) {
+function truncate(text, max = 16) {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
@@ -45,7 +35,6 @@ export default function ProductsView() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState(null);
 
-  // Load once on mount; later reloads happen via the Apply button
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
@@ -69,46 +58,81 @@ export default function ProductsView() {
 
   const chartData = products.slice(0, 10).map(p => ({ ...p, short_name: truncate(p.name) }));
 
-  return (
-    <div className="app-shell">
-      <Navbar />
-      <main className="page">
+  const card = `bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)]
+                p-4 sm:p-5 shadow-[var(--shadow)] mb-5`;
 
-        <div className="page-header">
-          <h1>Products</h1>
-          <p>Top 10 products by revenue</p>
+  return (
+    <div className="flex min-h-screen bg-[var(--bg-primary)]">
+      <Navbar />
+
+      <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7">
+
+        {/* ── Page header ─────────────────────────────────────────────────── */}
+        <div className="mb-5">
+          <h1 className="text-[clamp(26px,2vw+18px,38px)] font-bold leading-tight text-brand">Products</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Top 10 products by revenue</p>
         </div>
 
-        <div className="filter-bar">
-          <label htmlFor="products-from">From</label>
-          <input id="products-from" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-          <label htmlFor="products-to">To</label>
-          <input id="products-to" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <button className="btn-apply" onClick={loadData}>Apply</button>
+        {/* ── Filter bar ──────────────────────────────────────────────────── */}
+        <div className={`${card} flex flex-wrap items-center gap-3`}>
+          <label htmlFor="products-from" className="text-sm font-semibold text-[var(--text-secondary)]">From</label>
+          <input
+            id="products-from" type="date" value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-md
+                       px-2.5 py-1.5 text-sm text-[var(--text-primary)] min-w-0"
+          />
+          <label htmlFor="products-to" className="text-sm font-semibold text-[var(--text-secondary)]">To</label>
+          <input
+            id="products-to" type="date" value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-md
+                       px-2.5 py-1.5 text-sm text-[var(--text-primary)] min-w-0"
+          />
+          <button
+            onClick={loadData}
+            className="bg-brand text-white rounded-md px-4 py-1.5 text-sm font-semibold
+                       cursor-pointer hover:opacity-85 transition-opacity"
+          >
+            Apply
+          </button>
         </div>
 
         {error && <ErrorMessage message={error} onRetry={error === LOAD_ERROR_MESSAGE ? loadData : undefined} />}
 
-        {loading && <div className="loading">Loading products data…</div>}
+        {loading && (
+          <div className="flex items-center justify-center h-48 text-sm text-[var(--text-muted)]">
+            Loading products data…
+          </div>
+        )}
 
         {!loading && !error && (
           <>
-            {/* ── Top products bar chart ───────────────────────────────── */}
-            <div className="card highlight">
-              <div className="section-title">Top 10 Products by Revenue</div>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '2px 0 16px' }}>
-                {startDate} to {endDate} • Revenue in USD
+            {/* ── Bar chart ───────────────────────────────────────────────── */}
+            <div className={`${card} border-[var(--accent)] border-[1.5px]`}>
+              <div className="text-lg font-bold text-brand">Top 10 Products by Revenue</div>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-4">
+                {startDate} to {endDate} · Revenue in USD
               </p>
               {chartData.length === 0 ? (
-                <div className="loading">No products found for the selected date range.</div>
+                <div className="flex items-center justify-center h-48 text-sm text-[var(--text-muted)]">
+                  No products found for the selected date range.
+                </div>
               ) : (
-                <ResponsiveContainer width="100%" height={320}>
-                  <BarChart data={chartData} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData} margin={{ top: 4, right: 12, left: 0, bottom: 40 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                    <XAxis dataKey="short_name" tick={axisTick} stroke={colors.grid} interval={0} />
-                    <YAxis tickFormatter={formatCurrency} tick={axisTick} stroke={colors.grid} />
+                    <XAxis
+                      dataKey="short_name"
+                      tick={{ ...axisTick, fontSize: 11 }}
+                      stroke={colors.grid}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                    />
+                    <YAxis tickFormatter={formatCompact} tick={axisTick} stroke={colors.grid} />
                     <Tooltip
-                      formatter={(value) => [formatFull(value), 'Revenue']}
+                      formatter={(v) => [formatFull(v), 'Revenue']}
                       labelFormatter={(label, payload) => payload?.[0]?.payload?.name || label}
                       contentStyle={tooltipStyle}
                       cursor={{ fill: colors.cursor }}
@@ -123,29 +147,42 @@ export default function ProductsView() {
               )}
             </div>
 
-            {/* ── Products table ───────────────────────────────────────── */}
-            <div className="card">
-              <div className="section-title" style={{ marginBottom: 16 }}>Product Details</div>
+            {/* ── Table ───────────────────────────────────────────────────── */}
+            <div className={card}>
+              <div className="text-lg font-bold text-brand mb-4">Product Details</div>
               {products.length === 0 ? (
-                <div className="loading">No products found for the selected date range.</div>
+                <div className="flex items-center justify-center h-48 text-sm text-[var(--text-muted)]">
+                  No products found for the selected date range.
+                </div>
               ) : (
-                <div className="table-wrap">
-                  <table className="data-table">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm text-[var(--text-primary)]">
                     <thead>
                       <tr>
-                        <th scope="col">Product Name</th>
-                        <th scope="col">Category</th>
-                        <th scope="col" className="num">Units Sold</th>
-                        <th scope="col" className="num">Revenue</th>
+                        {['Product Name', 'Category', 'Units Sold', 'Revenue'].map((h, i) => (
+                          <th
+                            key={h}
+                            scope="col"
+                            className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-wide
+                                        text-[var(--text-muted)] border-b border-[var(--border)] whitespace-nowrap
+                                        ${i >= 2 ? 'text-right' : 'text-left'}`}
+                          >
+                            {h}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {products.map(p => (
-                        <tr key={p.product_id}>
-                          <td>{p.name}</td>
-                          <td>{p.category}</td>
-                          <td className="num">{Number(p.units_sold).toLocaleString('en-US')}</td>
-                          <td className="num revenue">{formatFull(p.revenue)}</td>
+                        <tr key={p.product_id} className="hover:bg-brand/5 transition-colors">
+                          <td className="px-3 py-2.5 border-b border-[var(--border)]">{p.name}</td>
+                          <td className="px-3 py-2.5 border-b border-[var(--border)]">{p.category}</td>
+                          <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">
+                            {Number(p.units_sold).toLocaleString('en-US')}
+                          </td>
+                          <td className="px-3 py-2.5 border-b border-[var(--border)] text-right font-bold text-brand">
+                            {formatFull(p.revenue)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
