@@ -283,12 +283,6 @@ def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
     [
         { "city": "Austin", "state": "TX", "order_count": 420, "revenue": 38430.00 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_customer (is_current = 1) on customer_id
-      - GROUP BY addr_city, addr_state
-      - ORDER BY revenue DESC
     """
     conn = get_connection()
 
