@@ -2,101 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Design tokens (mirrored in chartTheme.js for Recharts) ─────────────── */
 :root {
-  --bg-primary:   #FFFFFF;
-  --bg-card:      #FFFFFF;
-  --text-primary: #1A2332;
+  --bg-primary:    #FFFFFF;
+  --bg-card:       #FFFFFF;
+  --text-primary:  #1A2332;
   --text-secondary:#455A64;
-  --text-muted:   #6B778C;
-  --border:       #E5E9F2;
-  --accent:       #00BFA5;
-  --blue:         #1D4FFF;
-  --sidebar:      #1D4FFF;
-  --shadow:       0 1px 4px rgba(16,24,40,0.06);
-  --radius:       10px;
+  --text-muted:    #6B778C;
+  --border:        #E5E9F2;
+  --accent:        #00BFA5;
+  --blue:          #1D4FFF;
+  --sidebar:       #1D4FFF;
+  --shadow:        0 1px 4px rgba(16,24,40,0.06);
+  --radius:        10px;
 }
 
 [data-theme="dark"] {
-  --bg-primary:   #0D1B2A;
-  --bg-card:      #132337;
-  --text-primary: #E8EDF2;
+  --bg-primary:    #0D1B2A;
+  --bg-card:       #132337;
+  --text-primary:  #E8EDF2;
   --text-secondary:#90A4AE;
-  --text-muted:   #8CA0B3;
-  --border:       #1E3248;
-  --accent:       #2DD4BF;
-  --blue:         #6B8AFF;
-  --sidebar:      #1D4FFF;
-  --shadow:       0 2px 12px rgba(0,0,0,0.3);
+  --text-muted:    #8CA0B3;
+  --border:        #1E3248;
+  --accent:        #2DD4BF;
+  --blue:          #6B8AFF;
+  --sidebar:       #1D4FFF;
+  --shadow:        0 2px 12px rgba(0,0,0,0.3);
 }
 
-/* Typography: one family (IBM Plex Sans), 1.5 line height, left-aligned.
-   Preflight resets headings to inherit, so sizes are set explicitly. */
-@layer base {
-  body {
-    @apply bg-page font-sans text-[15px] font-normal leading-normal text-ink text-left min-h-screen;
-    transition: background 0.2s, color 0.2s;
-  }
-  h1, h2, h3 { @apply font-bold text-brand; }
+/* ── Base resets ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background 0.2s, color 0.2s;
+  min-height: 100vh;
 }
 
-@layer components {
-  /* Page title scales with the screen: 28px on phones up to 40px on wide displays */
-  .page-title { @apply text-[clamp(28px,2vw+20px,40px)] font-bold leading-tight text-brand; }
-  .page-sub   { @apply mt-1 text-sm text-muted; }
+button, input, select { font-family: inherit; }
 
-  .card {
-    @apply mb-5 rounded-card border border-line bg-card p-4 shadow-card sm:p-5;
-  }
-  .card.highlight { @apply border-[1.5px] border-accent; }
-  .section-title  { @apply text-lg font-bold leading-snug text-brand; }
-
-  /* Stat cards */
-  .stat-box   { @apply relative rounded-card border border-line bg-card px-[22px] py-[18px] shadow-card; }
-  .stat-label { @apply mb-1 text-sm font-semibold text-ink2; }
-  .stat-value { @apply text-[clamp(24px,1.5vw+18px,32px)] font-bold leading-tight text-ink; }
-  .stat-sub   { @apply mt-1.5 text-[13px] text-muted; }
-  .stat-dot   { @apply absolute right-4 top-4 h-3 w-3 rounded-full; }
-
-  /* Date filter */
-  .filter-bar {
-    @apply mb-5 grid grid-cols-2 gap-3 rounded-card border border-line bg-card px-4 py-3
-           sm:flex sm:flex-wrap sm:items-center;
-  }
-  .filter-field { @apply flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:gap-2; }
-  .filter-bar label { @apply text-sm font-semibold text-ink2; }
-  .filter-bar input, .filter-bar select {
-    @apply w-full min-w-0 rounded-md border border-line bg-page px-2.5 py-1.5 text-base text-ink sm:w-auto sm:text-sm;
-  }
-  .btn-apply {
-    @apply col-span-2 rounded-md bg-brand px-[18px] py-2.5 text-sm font-semibold text-white
-           hover:opacity-85 sm:col-span-1 sm:py-[7px];
-  }
-
-  .loading { @apply flex h-[200px] items-center justify-center text-center text-sm text-muted; }
-
-  .error-banner {
-    @apply mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#EF9A9A]
-           bg-[#FFEBEE] p-4 text-[#C62828];
-  }
-  [data-theme="dark"] .error-banner { border-color: #7F2A33; background: #3A1A1F; color: #EF9A9A; }
-  .btn-retry {
-    @apply rounded-md border border-current bg-transparent px-3.5 py-1.5 text-[13px] font-semibold hover:opacity-75;
-  }
-
-  /* Tables (shown from md up; phones get card lists instead) */
-  .data-table { @apply w-full border-collapse text-sm text-ink; }
-  .data-table th, .data-table td { @apply border-b border-line px-3 py-2.5 text-left; }
-  .data-table th {
-    @apply whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-muted;
-  }
-  .data-table .num { @apply text-right; }
-  .data-table td.revenue { @apply font-bold text-brand; }
-  .data-table tbody tr:hover { background: rgba(29,79,255,0.05); }
-
-  .sort-btn { @apply cursor-pointer border-0 bg-transparent p-0 hover:text-brand focus-visible:text-brand; }
-  .sort-btn.active { @apply text-brand; }
-
-  /* Mobile list cards (Products + Customers) */
-  .list-card  { @apply rounded-card border border-line bg-card p-4 shadow-card; }
-  .list-label { @apply text-xs uppercase tracking-wide text-muted; }
-}
+/* ── Recharts tooltip needs a concrete colour — Tailwind can't reach it ─── */
+.recharts-tooltip-wrapper { pointer-events: none; }

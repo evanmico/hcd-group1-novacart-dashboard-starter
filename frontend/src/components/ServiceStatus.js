@@ -1,8 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { getHealth } from '../utils/dataSource';
 
-const COLORS = { healthy: '#3DDC97', degraded: '#FFC857', error: '#FF6B6B', checking: '#B8C4E0' };
-const LABELS = { healthy: 'Service healthy', degraded: 'Degraded', error: 'Offline', checking: 'Checking…' };
+const COLORS = {
+  healthy:  'bg-emerald-400 shadow-[0_0_6px_#3DDC97]',
+  degraded: 'bg-yellow-400',
+  error:    'bg-red-400',
+  checking: 'bg-slate-400',
+};
+const LABELS = {
+  healthy:  'Service healthy',
+  degraded: 'Degraded',
+  error:    'Offline',
+  checking: 'Checking…',
+};
 
 export default function ServiceStatus() {
   const [status, setStatus] = useState('checking');
@@ -26,14 +36,13 @@ export default function ServiceStatus() {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 text-[13px] font-medium text-white" title={detail} role="status" aria-live="polite">
-      <span
-        className="inline-block h-2 w-2 rounded-full"
-        style={{
-          backgroundColor: COLORS[status],
-          boxShadow: status === 'healthy' ? `0 0 6px ${COLORS[status]}` : 'none',
-        }}
-      />
+    <div
+      className="flex items-center gap-2 text-[13px] font-medium text-white"
+      title={detail}
+      role="status"
+      aria-live="polite"
+    >
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${COLORS[status]}`} />
       <span>{LABELS[status]}</span>
     </div>
   );

@@ -1,17 +1,11 @@
 /**
  * CustomersView.js — Customer List page
- *
- * This page shows:
- *   - A sortable table of top 20 customers by revenue
- *   - Columns: Name | City | State | Orders | Total Spent
- *   - A date range filter
- *
- * Data comes from utils/dataSource (dummy data by default, see REACT_APP_USE_MOCK).
+ * Shows top 20 customers by revenue in a sortable, responsive table.
+ * Fully responsive with Tailwind CSS.
  */
 
 import React, { useState, useEffect } from 'react';
-import PageShell from '../components/PageShell';
-import DateRangeFilter from '../components/DateRangeFilter';
+import Navbar from '../components/Navbar';
 import ErrorMessage, { LOAD_ERROR_MESSAGE } from '../components/ErrorMessage';
 import { getCustomers } from '../utils/dataSource';
 
@@ -20,7 +14,6 @@ function formatCurrency(value) {
   return `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-// Table columns: key matches the customer object field; numeric columns are right-aligned
 const COLUMNS = [
   { key: 'name',         label: 'Name',        numeric: false },
   { key: 'city',         label: 'City',        numeric: false },
@@ -38,7 +31,6 @@ export default function CustomersView() {
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState(null);
 
-  // Load once on mount; later reloads happen via the Apply button
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
 
@@ -60,7 +52,6 @@ export default function CustomersView() {
     }
   }
 
-  // Sort handler — toggles direction if same column, resets to desc if new column
   function handleSort(column) {
     if (sortBy === column) {
       setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -70,7 +61,6 @@ export default function CustomersView() {
     }
   }
 
-  // Apply sort to customers array
   const sorted = [...customers].sort((a, b) => {
     const va = a[sortBy], vb = b[sortBy];
     if (typeof va === 'number') return sortDir === 'asc' ? va - vb : vb - va;
@@ -79,97 +69,89 @@ export default function CustomersView() {
       : String(vb).localeCompare(String(va));
   });
 
-  // Sort indicator helper
-  const sortIcon = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
+  const sortIcon  = (col) => sortBy === col ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '';
+  const ariaSort  = (col) => sortBy === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
 
-  // Screen-reader sort state for a column header
-  const ariaSort = (col) => sortBy === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
+  const card = `bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--radius)]
+                p-4 sm:p-5 shadow-[var(--shadow)] mb-5`;
 
   return (
-    <PageShell title="Customers" subtitle="Top 20 customers by revenue">
-        <DateRangeFilter
-          idPrefix="customers"
-          startDate={startDate}
-          endDate={endDate}
-          onStartChange={setStartDate}
-          onEndChange={setEndDate}
-          onApply={loadData}
-        >
-          <span className="col-span-2 text-[13px] text-muted sm:col-span-1 sm:ml-auto">
+    <div className="flex min-h-screen bg-[var(--bg-primary)]">
+      <Navbar />
+
+      <main className="flex-1 min-w-0 w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-7">
+
+        {/* ── Page header ─────────────────────────────────────────────────── */}
+        <div className="mb-5">
+          <h1 className="text-[clamp(26px,2vw+18px,38px)] font-bold leading-tight text-brand">Customers</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">Top 20 customers by revenue</p>
+        </div>
+
+        {/* ── Filter bar ──────────────────────────────────────────────────── */}
+        <div className={`${card} flex flex-wrap items-center gap-3`}>
+          <label htmlFor="customers-from" className="text-sm font-semibold text-[var(--text-secondary)]">From</label>
+          <input
+            id="customers-from" type="date" value={startDate}
+            onChange={e => setStartDate(e.target.value)}
+            className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-md
+                       px-2.5 py-1.5 text-sm text-[var(--text-primary)] min-w-0"
+          />
+          <label htmlFor="customers-to" className="text-sm font-semibold text-[var(--text-secondary)]">To</label>
+          <input
+            id="customers-to" type="date" value={endDate}
+            onChange={e => setEndDate(e.target.value)}
+            className="bg-[var(--bg-primary)] border border-[var(--border)] rounded-md
+                       px-2.5 py-1.5 text-sm text-[var(--text-primary)] min-w-0"
+          />
+          <button
+            onClick={loadData}
+            className="bg-brand text-white rounded-md px-4 py-1.5 text-sm font-semibold
+                       cursor-pointer hover:opacity-85 transition-opacity"
+          >
+            Apply
+          </button>
+          <span className="ml-auto text-xs text-[var(--text-muted)]">
             {customers.length} customers
           </span>
-        </DateRangeFilter>
+        </div>
 
         {error && <ErrorMessage message={error} onRetry={error === LOAD_ERROR_MESSAGE ? loadData : undefined} />}
 
-        {loading && <div className="loading">Loading customers…</div>}
+        {loading && (
+          <div className="flex items-center justify-center h-48 text-sm text-[var(--text-muted)]">
+            Loading customers…
+          </div>
+        )}
 
         {!loading && !error && (
-          <div className="card">
-            <div className="section-title mb-4">
-              Top Customers by Revenue
-            </div>
+          <div className={card}>
+            <div className="text-lg font-bold text-brand mb-4">Top Customers by Revenue</div>
 
             {sorted.length === 0 ? (
-              <div className="loading">No customers found for the selected date range.</div>
-            ) : (
-              <>
-              {/* Phones: sort controls (every column) + one card per customer */}
-              <div className="mb-3 flex items-center gap-2 md:hidden">
-                <label htmlFor="customers-sort" className="text-sm font-semibold text-ink2">Sort by</label>
-                <select
-                  id="customers-sort"
-                  value={sortBy}
-                  onChange={e => { setSortBy(e.target.value); setSortDir('desc'); }}
-                  className="min-w-0 flex-1 rounded-md border border-line bg-page px-2.5 py-2 text-base text-ink"
-                >
-                  {COLUMNS.map(col => <option key={col.key} value={col.key}>{col.label}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => setSortDir(d => d === 'asc' ? 'desc' : 'asc')}
-                  aria-label={`Sort direction: ${sortDir === 'asc' ? 'ascending' : 'descending'}. Tap to reverse.`}
-                  className="shrink-0 cursor-pointer rounded-md border border-line bg-page px-3 py-2 text-base font-semibold text-brand"
-                >
-                  {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
-                </button>
+              <div className="flex items-center justify-center h-48 text-sm text-[var(--text-muted)]">
+                No customers found for the selected date range.
               </div>
-
-              <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
-                {sorted.map(c => (
-                  <li key={c.customer_id} className="list-card !shadow-none">
-                    <div className="font-semibold text-ink">{c.name}</div>
-                    <div className="text-sm text-muted">{c.city}, {c.state}</div>
-                    <dl className="mt-3 grid grid-cols-2 gap-2">
-                      <div>
-                        <dt className="list-label">Orders</dt>
-                        <dd className="m-0 font-semibold text-ink">{Number(c.total_orders).toLocaleString('en-US')}</dd>
-                      </div>
-                      <div>
-                        <dt className="list-label">Total Spent</dt>
-                        <dd className="m-0 font-bold text-brand">{formatCurrency(c.total_spent)}</dd>
-                      </div>
-                    </dl>
-                  </li>
-                ))}
-              </ul>
-
-              {/* md and up: sortable table */}
-              <div className="hidden overflow-x-auto md:block">
-                <table className="data-table">
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm text-[var(--text-primary)]">
                   <thead>
                     <tr>
                       {COLUMNS.map(col => (
                         <th
                           key={col.key}
                           scope="col"
-                          className={col.numeric ? 'num' : undefined}
                           aria-sort={ariaSort(col.key)}
+                          className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-wide
+                                      text-[var(--text-muted)] border-b border-[var(--border)] whitespace-nowrap
+                                      ${col.numeric ? 'text-right' : 'text-left'}`}
                         >
                           <button
                             type="button"
-                            className={`sort-btn${sortBy === col.key ? ' active' : ''}`}
                             onClick={() => handleSort(col.key)}
+                            className={`bg-transparent border-none p-0 cursor-pointer font-[inherit]
+                                        text-[inherit] uppercase tracking-[inherit] text-xs
+                                        hover:text-brand focus-visible:text-brand transition-colors
+                                        ${sortBy === col.key ? 'text-brand' : ''}`}
                           >
                             {col.label}{sortIcon(col.key)}
                           </button>
@@ -179,22 +161,25 @@ export default function CustomersView() {
                   </thead>
                   <tbody>
                     {sorted.map(c => (
-                      <tr key={c.customer_id}>
-                        <td>{c.name}</td>
-                        <td>{c.city}</td>
-                        <td>{c.state}</td>
-                        <td className="num">{Number(c.total_orders).toLocaleString('en-US')}</td>
-                        <td className="num revenue">{formatCurrency(c.total_spent)}</td>
+                      <tr key={c.customer_id} className="hover:bg-brand/5 transition-colors">
+                        <td className="px-3 py-2.5 border-b border-[var(--border)]">{c.name}</td>
+                        <td className="px-3 py-2.5 border-b border-[var(--border)]">{c.city}</td>
+                        <td className="px-3 py-2.5 border-b border-[var(--border)]">{c.state}</td>
+                        <td className="px-3 py-2.5 border-b border-[var(--border)] text-right">
+                          {Number(c.total_orders).toLocaleString('en-US')}
+                        </td>
+                        <td className="px-3 py-2.5 border-b border-[var(--border)] text-right font-bold text-brand">
+                          {formatCurrency(c.total_spent)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              </>
             )}
-
           </div>
         )}
-    </PageShell>
+      </main>
+    </div>
   );
 }
