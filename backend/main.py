@@ -225,8 +225,34 @@ def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            p.product_id                AS product_id,
+            p.name                      AS name,
+            p.category                  AS category,
+            SUM(f.quantity)             AS units_sold,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_product p ON f.product_id = p.product_id
+        WHERE f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY p.product_id, p.name, p.category
+        ORDER BY revenue DESC
+        LIMIT 10
+    """, (start, end))
+
+    return [
+        {
+            "product_id": row["product_id"],
+            "name":       row["name"],
+            "category":   row["category"],
+            "units_sold": row["units_sold"],
+            "revenue":    round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/customers", tags=["Franchise"])
