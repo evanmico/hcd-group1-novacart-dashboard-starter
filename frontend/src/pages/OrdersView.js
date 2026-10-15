@@ -10,6 +10,7 @@ import { getOrders, getCities } from '../utils/dataSource';
 import { useTheme } from '../utils/ThemeContext';
 import { getChartTheme } from '../utils/chartTheme';
 import { useDateRange } from '../utils/DateRangeContext';
+import useMediaQuery from '../utils/useMediaQuery';
 import barsIcon from '../assets/icons/bars.svg';
 import revChartIcon from '../assets/icons/revenue_chart.svg';
 import revenueIcon from '../assets/icons/revenue.svg';
@@ -30,6 +31,10 @@ export default function OrdersView() {
   const { dark } = useTheme();
   const { colors, axisTick, tooltipStyle } = getChartTheme(dark);
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange();
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const cityXAxisProps = isMobile
+    ? { tick: { ...axisTick, fontSize: 11, angle: -45, textAnchor: 'end' }, height: 70 }
+    : { tick: { ...axisTick, fontSize: 11 } };
 
   const [orders, setOrders] = useState([]);
   const [cities, setCities] = useState([]);
@@ -213,7 +218,7 @@ export default function OrdersView() {
                       {cityChartType === 'bar' ? (
                         <BarChart data={revenueByCityData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                          <XAxis dataKey="label" tick={{ ...axisTick, fontSize: 11 }} stroke={colors.grid} interval={0} />
+                          <XAxis dataKey="label" {...cityXAxisProps} stroke={colors.grid} interval={0} />
                           <YAxis tickFormatter={formatCompact} tick={{ ...axisTick, fontSize: 11 }} stroke={colors.grid} width={52} />
                           <Tooltip formatter={tooltipFmt} contentStyle={tooltipStyle} cursor={{ fill: colors.cursor }} />
                           <Bar dataKey="revenue" fill={colors.bar} radius={[4, 4, 0, 0]} />
@@ -221,7 +226,7 @@ export default function OrdersView() {
                       ) : (
                         <LineChart data={revenueByCityData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} vertical={false} />
-                          <XAxis dataKey="label" tick={{ ...axisTick, fontSize: 11 }} stroke={colors.grid} interval={0} />
+                          <XAxis dataKey="label" {...cityXAxisProps} stroke={colors.grid} interval={0} />
                           <YAxis tickFormatter={formatCompact} tick={{ ...axisTick, fontSize: 11 }} stroke={colors.grid} width={52} />
                           <Tooltip formatter={tooltipFmt} contentStyle={tooltipStyle} cursor={{ stroke: colors.bar, strokeOpacity: 0.3 }} />
                           <Line type="monotone" dataKey="revenue" stroke={colors.bar} strokeWidth={2} dot={false} />
