@@ -58,8 +58,8 @@ export default function ProductsView() {
     } finally { setLoading(false); }
   }
 
-  // Horizontal bar chart data (top 10, reversed so highest is at top)
-  const chartData = products.slice(0, 10).map(p => ({ ...p, short_name: truncate(p.name) })).reverse();
+  // Horizontal bar chart data (top 10, highest revenue first = at top)
+  const chartData = products.slice(0, 10).map(p => ({ ...p, short_name: truncate(p.name) }));
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen" style={{ background: 'var(--bg-primary)' }}>
@@ -117,7 +117,7 @@ export default function ProductsView() {
                       <Tooltip formatter={(v) => [formatFull(v), 'Revenue']} labelFormatter={(l, p) => p?.[0]?.payload?.name || l} contentStyle={tooltipStyle} cursor={{ fill: colors.cursor }} />
                       <Bar dataKey="revenue" radius={[0, 4, 4, 0]} label={{ position: 'right', formatter: formatCompact, fontSize: 11, fill: 'var(--text-muted)' }}>
                         {chartData.map((p, i) => (
-                          <Cell key={p.product_id} fill={i === chartData.length - 1 ? colors.highlight : colors.bar} />
+                          <Cell key={p.product_id} fill={i === 0 ? colors.highlight : colors.bar} />
                         ))}
                       </Bar>
                     </BarChart>
