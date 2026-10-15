@@ -40,19 +40,25 @@ const INPUT_CLS = 'bg-[var(--bg-primary)] border border-[var(--border)] rounded-
 export default function ProductsView() {
   const { dark } = useTheme();
   const { colors, axisTick, tooltipStyle } = getChartTheme(dark);
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange();
+  const { startDate, endDate } = useDateRange();
+
+  // Draft state for the inputs; applied state drives the actual fetch
+  const [draftStart, setDraftStart] = useState(startDate);
+  const [draftEnd, setDraftEnd] = useState(endDate);
+  const [appliedStart, setAppliedStart] = useState(startDate);
+  const [appliedEnd, setAppliedEnd] = useState(endDate);
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(); }, [startDate, endDate]);
+  useEffect(() => { loadData(); }, [appliedStart, appliedEnd]);
 
   async function loadData() {
     setLoading(true); setError(null);
     try {
-      setProducts(await getProducts(startDate, endDate));
+      setProducts(await getProducts(appliedStart, appliedEnd));
     } catch (err) {
       console.error(err); setError(LOAD_ERROR_MESSAGE);
     } finally { setLoading(false); }
@@ -75,10 +81,10 @@ export default function ProductsView() {
         {/* Date range filter */}
         <div className={`${CARD} flex flex-wrap items-center gap-3 mb-5`}>
           <span className="text-[13px] font-semibold text-[var(--text-secondary)]">From</span>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={INPUT_CLS} />
+          <input type="date" value={draftStart} onChange={e => setDraftStart(e.target.value)} className={INPUT_CLS} />
           <span className="text-[13px] font-semibold text-[var(--text-secondary)]">To</span>
-          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={INPUT_CLS} />
-          <button onClick={loadData}
+          <input type="date" value={draftEnd} onChange={e => setDraftEnd(e.target.value)} className={INPUT_CLS} />
+          <button onClick={() => { setAppliedStart(draftStart); setAppliedEnd(draftEnd); }}
             className="bg-[var(--blue)] text-white rounded-md px-5 py-1.5 text-[13px] font-semibold cursor-pointer hover:opacity-90 transition-opacity border-0">
             Apply
           </button>
