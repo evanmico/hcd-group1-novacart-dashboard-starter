@@ -55,3 +55,8 @@ p  { font-size: 15px; font-weight: 400; line-height: 1.5; color: var(--text-prim
 button, input, select { font-family: inherit; font-size: inherit; line-height: 1.5; }
 
 .recharts-tooltip-wrapper { pointer-events: none; }
+
+/* Adaptive icon tint — makes dark-on-light SVGs contrast correctly in dark mode */
+[data-theme="dark"] .icon-adaptive {
+  filter: invert(1) brightness(1.8);
+}

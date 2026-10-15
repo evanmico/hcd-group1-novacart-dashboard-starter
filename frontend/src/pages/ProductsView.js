@@ -30,7 +30,7 @@ const CATEGORY_ICONS = {
 function CategoryIcon({ category }) {
   const src = CATEGORY_ICONS[category];
   if (!src) return <span style={{ display:'inline-block', width:16, height:16, borderRadius:'50%', background:'var(--blue)', flexShrink:0 }} />;
-  return <img src={src} alt={category} width="16" height="16" style={{ flexShrink:0, display:'block' }} />;
+  return <img src={src} alt={category} width="16" height="16" className="icon-adaptive" style={{ flexShrink:0, display:'block' }} />;
 }
 
 const CARD = 'bg-[var(--bg-card)] border border-[var(--border)] rounded-[10px] p-5 shadow-[var(--shadow)]';

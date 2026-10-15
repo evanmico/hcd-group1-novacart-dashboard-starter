@@ -137,7 +137,7 @@ export default function OrdersView() {
               {statCards.map(({ iconSrc, label, value, sub }) => (
                 <div key={label} className={CARD}>
                   <div className="flex items-center gap-2.5 mb-3">
-                    <img src={iconSrc} alt="" width="28" height="28" />
+                    <img src={iconSrc} alt="" width="28" height="28" className="icon-adaptive" />
                     <span className="text-[13px] font-semibold text-[var(--text-secondary)]">{label}</span>
                   </div>
                   <div className="text-[28px] font-bold text-[var(--text-primary)] leading-tight">{value}</div>
@@ -153,7 +153,7 @@ export default function OrdersView() {
               <div className={CARD}>
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <img src={revenueIcon} alt="" width="18" height="18" />
+                    <img src={revenueIcon} alt="" width="18" height="18" className="icon-adaptive" />
                     <div className="text-[14px] font-bold text-[var(--blue)]">Revenue by City</div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -235,7 +235,7 @@ export default function OrdersView() {
               <div className={CARD}>
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <img src={revenueIcon} alt="" width="18" height="18" />
+                    <img src={revenueIcon} alt="" width="18" height="18" className="icon-adaptive" />
                     <div className="text-[14px] font-bold text-[var(--blue)]">Monthly Revenue</div>
                   </div>
                   <div className="flex items-center gap-2">
