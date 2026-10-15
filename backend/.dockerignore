@@ -8,3 +8,4 @@ rsa_key.pub
 *.egg-info/
 dist/
 build/
+venv/
