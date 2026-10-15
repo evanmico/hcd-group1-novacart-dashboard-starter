@@ -5,6 +5,7 @@ import ErrorMessage, { LOAD_ERROR_MESSAGE } from '../components/ErrorMessage';
 import { getProducts } from '../utils/dataSource';
 import { useTheme } from '../utils/ThemeContext';
 import { getChartTheme } from '../utils/chartTheme';
+import { useDateRange } from '../utils/DateRangeContext';
 import electronicsIcon from '../assets/icons/electronics.svg';
 import accessoriesIcon from '../assets/icons/accessories.svg';
 import storageIcon from '../assets/icons/storage.svg';
@@ -36,39 +37,22 @@ function CategoryIcon({ category }) {
 const CARD = 'bg-[var(--bg-card)] border border-[var(--border)] rounded-[10px] p-5 shadow-[var(--shadow)]';
 const INPUT_CLS = 'bg-[var(--bg-primary)] border border-[var(--border)] rounded-md px-3 py-1.5 text-[13px] text-[var(--text-primary)] focus:outline-none focus:border-[var(--blue)]';
 
-const MONTHS = [
-  { label: 'January',   value: '2022-01-01', end: '2022-01-31' },
-  { label: 'February',  value: '2022-02-01', end: '2022-02-28' },
-  { label: 'March',     value: '2022-03-01', end: '2022-03-31' },
-  { label: 'April',     value: '2022-04-01', end: '2022-04-30' },
-  { label: 'May',       value: '2022-05-01', end: '2022-05-31' },
-  { label: 'June',      value: '2022-06-01', end: '2022-06-30' },
-  { label: 'July',      value: '2022-07-01', end: '2022-07-31' },
-  { label: 'August',    value: '2022-08-01', end: '2022-08-31' },
-  { label: 'September', value: '2022-09-01', end: '2022-09-30' },
-  { label: 'October',   value: '2022-10-01', end: '2022-10-31' },
-  { label: 'November',  value: '2022-11-01', end: '2022-11-30' },
-  { label: 'December',  value: '2022-12-01', end: '2022-12-31' },
-  { label: 'Full Year', value: '2022-01-01', end: '2022-12-31' },
-];
-
 export default function ProductsView() {
   const { dark } = useTheme();
   const { colors, axisTick, tooltipStyle } = getChartTheme(dark);
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange();
 
-  const [selectedMonth, setSelectedMonth] = useState('Full Year');
-  const [products,  setProducts]  = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const currentMonth = MONTHS.find(m => m.label === selectedMonth) || MONTHS[MONTHS.length - 1];
-
-  useEffect(() => { loadData(); }, [selectedMonth]); // eslint-disable-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData(); }, [startDate, endDate]);
 
   async function loadData() {
     setLoading(true); setError(null);
     try {
-      setProducts(await getProducts(currentMonth.value, currentMonth.end));
+      setProducts(await getProducts(startDate, endDate));
     } catch (err) {
       console.error(err); setError(LOAD_ERROR_MESSAGE);
     } finally { setLoading(false); }
@@ -83,22 +67,21 @@ export default function ProductsView() {
 
       <main className="flex-1 min-w-0 px-6 py-7">
 
-        {/* Page header + month filter */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-[28px] font-bold text-[var(--blue)] leading-tight">Products</h1>
-            <p className="text-[13px] text-[var(--text-muted)] mt-1">Top 10 products by revenue</p>
-          </div>
-          <select
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            className={`${INPUT_CLS} mt-1 flex-shrink-0`}
-            aria-label="Select month"
-          >
-            {MONTHS.map(m => (
-              <option key={m.label} value={m.label}>{m.label}</option>
-            ))}
-          </select>
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-[28px] font-bold text-[var(--blue)] leading-tight">Products</h1>
+          <p className="text-[13px] text-[var(--text-muted)] mt-1">Top 10 products by revenue</p>
+        </div>
+        {/* Date range filter */}
+        <div className={`${CARD} flex flex-wrap items-center gap-3 mb-5`}>
+          <span className="text-[13px] font-semibold text-[var(--text-secondary)]">From</span>
+          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={INPUT_CLS} />
+          <span className="text-[13px] font-semibold text-[var(--text-secondary)]">To</span>
+          <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={INPUT_CLS} />
+          <button onClick={loadData}
+            className="bg-[var(--blue)] text-white rounded-md px-5 py-1.5 text-[13px] font-semibold cursor-pointer hover:opacity-90 transition-opacity border-0">
+            Apply
+          </button>
         </div>
 
         {error && <ErrorMessage message={error} onRetry={error === LOAD_ERROR_MESSAGE ? loadData : undefined} />}

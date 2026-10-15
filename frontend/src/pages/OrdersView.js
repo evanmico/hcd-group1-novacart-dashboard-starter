@@ -9,6 +9,7 @@ import ErrorMessage, { LOAD_ERROR_MESSAGE } from '../components/ErrorMessage';
 import { getOrders, getCities } from '../utils/dataSource';
 import { useTheme } from '../utils/ThemeContext';
 import { getChartTheme } from '../utils/chartTheme';
+import { useDateRange } from '../utils/DateRangeContext';
 import barsIcon from '../assets/icons/bars.svg';
 import revChartIcon from '../assets/icons/revenue_chart.svg';
 import revenueIcon from '../assets/icons/revenue.svg';
@@ -28,16 +29,15 @@ const INPUT_CLS = 'bg-[var(--bg-primary)] border border-[var(--border)] rounded-
 export default function OrdersView() {
   const { dark } = useTheme();
   const { colors, axisTick, tooltipStyle } = getChartTheme(dark);
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange();
 
-  const [startDate,    setStartDate]    = useState('2022-01-01');
-  const [endDate,      setEndDate]      = useState('2022-12-31');
-  const [orders,       setOrders]       = useState([]);
-  const [cities,       setCities]       = useState([]);
-  const [selectedState,setSelectedState]= useState('');
-  const [cityChartType,setCityChartType]= useState('bar');
-  const [monthlyChartType,setMonthlyChartType]= useState('line');
-  const [loading,      setLoading]      = useState(true);
-  const [error,        setError]        = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [cityChartType, setCityChartType] = useState('bar');
+  const [monthlyChartType, setMonthlyChartType] = useState('line');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, []);
@@ -255,40 +255,6 @@ export default function OrdersView() {
                       >
                         Bar
                       </button>
-                    </div>
-
-                    {/* Figma-style "January ↓" pill */}
-                    <div className="relative">
-                      <select
-                        value={startDate.slice(0, 7)}
-                        onChange={e => {
-                          const [y, m] = e.target.value.split('-');
-                          const lastDay = new Date(+y, +m, 0).getDate();
-                          setStartDate(`${y}-${m}-01`);
-                          setEndDate(`${y}-${m}-${String(lastDay).padStart(2,'0')}`);
-                        }}
-                        aria-label="Select month"
-                        style={{
-                          appearance: 'none', WebkitAppearance: 'none',
-                          background: 'var(--bg-primary)',
-                          border: '1px solid var(--border)',
-                          borderRadius: 999,
-                          padding: '4px 28px 4px 12px',
-                          fontSize: 12, fontWeight: 500,
-                          color: 'var(--text-primary)',
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                        }}
-                      >
-                        {['January','February','March','April','May','June','July','August','September','October','November','December'].map((name, idx) => (
-                          <option key={name} value={`2022-${String(idx+1).padStart(2,'0')}`}>{name}</option>
-                        ))}
-                        <option value="2022-01">Full Year (Jan–Dec)</option>
-                      </select>
-                      <svg style={{ position:'absolute', right:9, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}
-                        width="10" height="10" viewBox="0 0 10 10" fill="none">
-                        <path d="M2 3.5 L5 6.5 L8 3.5" stroke="var(--text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
                     </div>
                   </div>
                 </div>
