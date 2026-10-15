@@ -123,6 +123,91 @@ Use `status IN ('delivered', 'shipped')` for revenue calculations.
 
 ---
 
+## Frontend Implementation Notes (feat/frontend)
+
+The frontend was built against dummy data. `backend/`, `router/` and the database were not changed.
+
+### Data source
+
+- `frontend/src/utils/mockApi.js` holds dummy data with the same function names and response shapes as `api.js`.
+- `frontend/src/utils/dataSource.js` picks `mockApi` or the real `api.js`. All pages and `ServiceStatus` import from it.
+- Dummy data is the default. To call the real backend, set `REACT_APP_USE_MOCK=false` in `frontend/.env` (see `frontend/.env.example`) and restart `npm start`.
+- The dummy figures were copied from `novacart_gold.db` (orders with status `delivered` or `shipped`): 12 monthly rows, the 10 real cities, the real products and the real top 20 customers. Full-year values are exact. For a shorter date range, city, product and customer figures are scaled by that range's share of yearly revenue, which is an approximation.
+
+### Requirements coverage
+
+| ID | Requirement | Implementation | Status |
+|---|---|---|---|
+| FE-01 | React 18 | Starter project | Met |
+| FE-02 | Calls go through `/api/*` | `api.js` uses `REACT_APP_BACKEND_URL` (`/api` in SPCS). Pages call it through `dataSource.js`. | Met in code, not tested against a running backend |
+| FE-03 | OAuth via `/authorize`, store the franchise id | `utils/AuthContext.js` calls `authorize()` at startup, keeps the user in context and `sessionStorage`, and shows it in the sidebar | Met. The backend returns `user`, which is stored as the franchise id. |
+| FE-04 | Loading state and a friendly error | `components/ErrorMessage.js` shows "We couldn't load this data. Please try again." with a Retry button. Technical errors go to the console only. Every page shows a loading message. | Met |
+| FE-05 | Nav bar with all views and a status indicator | Sidebar links to Orders, Products and Customers, plus `ServiceStatus` (uses `/health`) | Met |
+| FE-06 | Dark mode toggle that persists | Toggle in the sidebar. Persistence comes from `ThemeContext.js` (localStorage). | Met |
+
+**View 1, Orders**
+- Total Revenue and Total Orders cards follow the date range. They are summed from the monthly data, so they also work with the real backend.
+- Monthly revenue is an area (line-style) chart with short month labels.
+- Revenue by city is a bar chart.
+- Date range filter with an Apply button, and a check that From is not after To.
+- Unique Customers is an extra card showing the all-time figure, because `/franchise/summary` has no date filter.
+
+**View 2, Products**
+- Top 10 products bar chart with the top product highlighted.
+- Table with Product Name, Category, Units Sold and Revenue.
+- Same date range filter.
+
+**View 3, Customers**
+- Top 20 customers table. Every column header is a sortable button with `aria-sort`.
+- Same date range filter.
+
+**Deviations from the requirements document**
+- The document says "country" for the Orders chart and the Customers table. The data only has city and state, so those are used.
+- The Unique Customers card is an addition.
+
+### Design (Figma: NovaCart MVP)
+
+- `components/Navbar.js` is a blue left sidebar: Indigo Bio Med brand block, uppercase links, a white pill on the active page, service status, theme toggle and a user block. The logo is a placeholder SVG, not the client's file.
+- `App.css` holds the blue (`#1D4FFF`) and teal (`#00BFA5`) tokens plus dark-mode variants. The colors were estimated from screenshots.
+- `utils/chartTheme.js` holds the shared chart colors, axis text and tooltip style for light and dark mode.
+- Dummy product names follow the Figma samples (Smart Scale Pro, Pulse Watch Elite and so on).
+
+**Differences from the Figma**
+- The From/To date pickers replace the month dropdown, because the requirements ask for a date range.
+- Revenue by city is a bar chart (required), where the Figma shows an area chart.
+- The Customers table shows City and State instead of Country.
+
+### Mobile and Tailwind CSS
+
+Tailwind CSS 3.4 (`tailwindcss`, `postcss`, `autoprefixer` as dev dependencies) styles the app. It is pinned to the 3.x line because `react-scripts` 5 does not work with Tailwind 4. `tailwind.config.js` maps theme tokens (`bg-card`, `text-brand`, `border-line` and so on) to the CSS variables in `App.css`, so dark mode keeps working through `data-theme="dark"`.
+
+- **Navigation:** below `lg` (1024px) `Navbar.js` is a blue top header with the logo, a user chip, three equal tab buttons (white pill when active), the status indicator and the theme toggle. From `lg` it is the fixed left sidebar.
+- **New helpers:** `components/PageShell.js` (page frame and title), `components/DateRangeFilter.js` (From/To/Apply, full-width on phones) and `utils/useMediaQuery.js` (for Recharts sizes, which CSS cannot control).
+- **Orders:** stat cards stack on phones and go 3-across from `sm`. Charts stack until `xl`, are shorter on phones, and use a narrower city axis.
+- **Products:** on phones the top-10 chart uses horizontal bars, and the table becomes a list of cards (name, category, units sold, revenue). The table shows from `md`.
+- **Customers:** on phones the table becomes cards, with a "Sort by" dropdown (every column) and an asc/desc button. The sortable table shows from `md`.
+- Not yet checked on a real phone or in browser dev tools. Only the build was verified.
+
+### Typography
+
+- IBM Plex Sans is self-hosted through `@fontsource/ibm-plex-sans`, with weights 400, 600 and 700 imported in `index.js`. No external font service is called.
+- Headings are bold blue. `h1` scales from 28px to 40px. Body text is 15px regular with a 1.5 line height. Text is left-aligned.
+- Known gaps against the 14–16 body spec: table headers and chart axis labels are 12px, and headings and stat values use a 1.2 line height.
+
+### Other changes
+
+- `useEffect` lint warnings are silenced with a comment on the three pages, because data loads once on mount and reloads on Apply.
+- Date inputs have linked labels, and the error and status components use `role="alert"` and `role="status"`.
+
+### Not done yet
+
+- Real data: the five backend endpoints are still unimplemented.
+- Verification: confirm the fonts and layout in the browser with `npm start`, and re-run `npm run build`.
+- Client logo and brand colors, if the client supplies them.
+
+---
+
+
 ## Deploying to SPCS
 
 When your endpoints are working and the UI is connected, on Day 4:

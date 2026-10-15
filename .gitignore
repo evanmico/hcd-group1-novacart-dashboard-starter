@@ -1,9 +1,12 @@
 __pycache__/
 *.pyc
 .env
+.venv
 rsa_key.p8
 rsa_key.pub
 node_modules/
 build/
 *.log
 .DS_Store
+
+backend/venv/

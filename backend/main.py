@@ -138,39 +138,27 @@ def get_summary():
         "unique_customers": 380,
         "date_range": { "start": "2022-01-01", "end": "2022-12-31" }
     }
-
-    TODO: implement this endpoint.
-    Hints:
-      - Use fact_orders table
-      - Filter status IN ('delivered', 'shipped') for revenue
-      - Use MIN/MAX of order_date for date_range
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    #
-    # results = execute_query(conn, """
-    #     SELECT
-    #         COUNT(DISTINCT order_id)    AS total_orders,
-    #         SUM(amount)                 AS total_revenue,
-    #         COUNT(DISTINCT customer_id) AS unique_customers,
-    #         MIN(order_date)             AS start_date,
-    #         MAX(order_date)             AS end_date
-    #     FROM fact_orders
-    #     WHERE status IN ('delivered', 'shipped')
-    # """)
-    #
-    # row = results[0]
-    # return {
-    #     "total_revenue":     round(row["total_revenue"] or 0, 2),
-    #     "total_orders":      row["total_orders"],
-    #     "unique_customers":  row["unique_customers"],
-    #     "date_range": {"start": row["start_date"], "end": row["end_date"]},
-    # }
-    # ─────────────────────────────────────────────────────────────────────────
-
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
-
+    results = execute_query(conn, """
+        SELECT
+            COUNT(DISTINCT order_id)    AS total_orders,
+            SUM(amount)                 AS total_revenue,
+            COUNT(DISTINCT customer_id) AS unique_customers,
+            MIN(order_date)             AS start_date,
+            MAX(order_date)             AS end_date
+        FROM fact_orders
+        WHERE status IN ('delivered', 'shipped')
+    """)
+    
+    row = results[0]
+    return {
+        "total_revenue":     round(float(row["total_revenue"] or 0), 2),
+        "total_orders":      row["total_orders"],
+        "unique_customers":  row["unique_customers"],
+        "date_range": {"start": row["start_date"], "end": row["end_date"]},
+    }
 
 @app.get("/franchise/orders", tags=["Franchise"])
 def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
@@ -187,18 +175,35 @@ def get_orders(start: str = "2022-01-01", end: str = "2022-12-31"):
         { "month": "2022-01", "month_name": "January", "order_count": 842, "revenue": 128450.00 },
         { "month": "2022-02", "month_name": "February", "order_count": 910, "revenue": 141230.00 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_date on date_key
-      - GROUP BY year, month, month_name
-      - Filter order_date between start and end
-      - Only include delivered + shipped for revenue
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            d.year                      AS year,
+            d.month                     AS month,
+            d.month_name                AS month_name,
+            COUNT(DISTINCT f.order_id)  AS order_count,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_date d ON f.date_key = d.date_key
+        WHERE f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY d.year, d.month, d.month_name
+        ORDER BY d.year, d.month
+    """, (start, end))
+
+    return [
+        {
+            "month":       f"{row['year']}-{int(row['month']):02d}",
+            "month_name":  row["month_name"],
+            "order_count": row["order_count"],
+            "revenue":     round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/products", tags=["Franchise"])
@@ -211,17 +216,37 @@ def get_products(start: str = "2022-01-01", end: str = "2022-12-31"):
         { "product_id": "P001", "name": "Wireless Headphones", "category": "Electronics",
           "units_sold": 342, "revenue": 30578.58 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_product on product_id
-      - GROUP BY product_id, name, category
-      - ORDER BY revenue DESC, LIMIT 10
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            p.product_id                AS product_id,
+            p.name                      AS name,
+            p.category                  AS category,
+            SUM(f.quantity)             AS units_sold,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_product p ON f.product_id = p.product_id
+        WHERE f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY p.product_id, p.name, p.category
+        ORDER BY revenue DESC
+        LIMIT 10
+    """, (start, end))
+
+    return [
+        {
+            "product_id": row["product_id"],
+            "name":       row["name"],
+            "category":   row["category"],
+            "units_sold": row["units_sold"],
+            "revenue":    round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/customers", tags=["Franchise"])
@@ -244,8 +269,37 @@ def get_customers(start: str = "2022-01-01", end: str = "2022-12-31"):
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            c.customer_id                AS customer_id,
+            c.name                       AS name,
+            c.addr_city                  AS city,
+            c.addr_state                 AS state,
+            COUNT(DISTINCT o.order_id)   AS total_orders,
+            ROUND(SUM(o.amount), 2)      AS total_spent
+        FROM fact_orders o
+        JOIN dim_customer c ON o.customer_id = c.customer_id
+        WHERE c.is_current = 1
+          AND o.status IN ('delivered', 'shipped')
+          AND o.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY c.customer_id, c.name, c.addr_city, c.addr_state
+        ORDER BY total_spent DESC
+        LIMIT 20
+    """, (start, end))
+
+    return [
+        {
+            "customer_id":  row["customer_id"],
+            "name":         row["name"],
+            "city":         row["city"],
+            "state":        row["state"],
+            "total_orders": row["total_orders"],
+            "total_spent":  float(row["total_spent"] or 0),
+        }
+        for row in results
+    ]
 
 
 @app.get("/franchise/cities", tags=["Franchise"])
@@ -258,14 +312,32 @@ def get_cities(start: str = "2022-01-01", end: str = "2022-12-31"):
     [
         { "city": "Austin", "state": "TX", "order_count": 420, "revenue": 38430.00 }
     ]
-
-    TODO: implement this endpoint.
-    Hints:
-      - JOIN fact_orders with dim_customer (is_current = 1) on customer_id
-      - GROUP BY addr_city, addr_state
-      - ORDER BY revenue DESC
     """
     conn = get_connection()
 
-    # ── YOUR CODE HERE ────────────────────────────────────────────────────────
-    raise HTTPException(status_code=501, detail="Not implemented yet — your turn!")
+    placeholder = "%s" if os.getenv("DATA_BACKEND", "sqlite") == "snowflake" else "?"
+
+    results = execute_query(conn, f"""
+        SELECT
+            c.addr_city                 AS city,
+            c.addr_state                AS state,
+            COUNT(DISTINCT f.order_id)  AS order_count,
+            SUM(f.amount)               AS revenue
+        FROM fact_orders f
+        JOIN dim_customer c ON f.customer_id = c.customer_id
+        WHERE c.is_current = 1
+          AND f.status IN ('delivered', 'shipped')
+          AND f.order_date BETWEEN {placeholder} AND {placeholder}
+        GROUP BY c.addr_city, c.addr_state
+        ORDER BY revenue DESC
+    """, (start, end))
+
+    return [
+        {
+            "city":        row["city"],
+            "state":       row["state"],
+            "order_count": row["order_count"],
+            "revenue":     round(float(row["revenue"] or 0), 2),
+        }
+        for row in results
+    ]
